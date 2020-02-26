@@ -89,7 +89,7 @@ connectionParameters conn params = params.psk_mode == conn_psk_mode
   where conn_psk_mode =         False /* Not supported yet */
         conn_retry =            False /* Not supported yet */
         conn_client_auth =      conn.client_auth_flag
-        conn_no_client_cert =   False /* Not supported yet */
+        conn_no_client_cert =   conn.no_client_cert
         conn_zero_rtt =         False /* Not supported yet */
 
 type Action = {
@@ -308,7 +308,7 @@ rfc2S2N msg = mkAct recordType messageType writer
 
 testParameters : Parameters
 testParameters = {
-            compat_mode = [True, False],
+            compat_mode = [False, True],
             psk_mode = False,
             retry = False,
             client_auth = False,
@@ -318,17 +318,18 @@ testParameters = {
 
 testConnection : connection
 testConnection = {
-            handshake = {handshake_type = 0x00000000,
-                message_number = 0x00000000},
-            mode = 0xfffffffe,
+            handshake = {handshake_type = 0x00000043,
+                message_number = 0x00000001},
+            mode = 0x00000001,
             corked_io = '\NUL',
             corked = zero,
-            is_caching_enabled = True,
+            is_caching_enabled = False,
             resume_from_cache = False,
             server_can_send_ocsp = False,
             key_exchange_eph = False,
             client_auth_flag = False,
-            actual_protocol_version = 0x22
+            actual_protocol_version = 0x22,
+            no_client_cert = True
         }
 
 printHandshake : {len} (fin len, len >= 1) => ([3][8], [len][22][8], [3][8], [len][22][8])
