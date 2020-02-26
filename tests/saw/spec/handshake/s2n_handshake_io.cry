@@ -25,7 +25,7 @@ conn_set_handshake_type conn = conn'
                                    }
         handshake_type' = NEGOTIATED || full_handshake ||
                             (if (full_handshake != 0) then
-                              perfect_forward_secrecy || ocsp_status || client_auth || no_client_cert
+                              perfect_forward_secrecy || ocsp_status || client_auth
                               else zero)
         full_handshake  = if (conn.is_caching_enabled /\ ~conn.resume_from_cache /\ ~IS_TLS13_HANDSHAKE conn)
                           then zero
@@ -38,9 +38,6 @@ conn_set_handshake_type conn = conn'
                       else zero
         client_auth = if conn.client_auth_flag
                       then CLIENT_AUTH
-                      else zero
-        no_client_cert = if (conn.no_client_cert /\ conn.client_auth_flag)
-                      then NO_CLIENT_CERT
                       else zero
 
 // This function models the update of the s2n_connection struct by the
@@ -69,6 +66,29 @@ advance_message conn = conn2
         message_number2 = conn.handshake.message_number + ( if skip_message then 2 else 1)
         skip_message = (IS_TLS13_HANDSHAKE conn2) /\ ((mode_writer conn2.mode) != (next_state conn).writer)
                            /\ ((next_state conn).record_type == TLS_CHANGE_CIPHER_SPEC)
+
+// This function models the update of the s2n_connection struct by the 
+// s2n_conn_set_handshake_no_client_cert function in s2n.
+conn_set_handshake_no_client_cert : connection -> connection
+conn_set_handshake_no_client_cert conn = conn3
+  where conn3 = {handshake = handshake'
+                ,mode = conn.mode
+                ,corked_io = conn.corked_io
+                ,corked = conn.corked
+                ,is_caching_enabled = conn.is_caching_enabled
+                ,resume_from_cache = conn.resume_from_cache
+                ,server_can_send_ocsp = conn.server_can_send_ocsp
+                ,key_exchange_eph = conn.key_exchange_eph
+                ,client_auth_flag = conn.client_auth_flag
+                ,actual_protocol_version = conn.actual_protocol_version
+                ,no_client_cert = conn.no_client_cert
+                }
+        (handshake' : handshake) = {handshake_type = handshake_type'
+                                   ,message_number = conn.handshake.message_number
+                                   }
+        handshake_type' = if conn.client_auth_flag
+                          then conn.handshake.handshake_type || NO_CLIENT_CERT
+                          else conn.handshake.handshake_type
 
 // for a given initial connection struct generate the
 // sequence of handshake_action's
@@ -130,10 +150,13 @@ snd (a, b) = b
 // s2n state transition that incorporates both s2n_advance_message and
 // s2n_conn_set_handshake_type
 s2nTrans : connection -> connection
-s2nTrans conn = conn''
-          where conn' = if helloState then conn_set_handshake_type conn else conn
-                conn'' = advance_message conn'
+s2nTrans conn = conn3
+          where conn2 = if helloState then conn_set_handshake_type conn 
+                        else if noCertAuthState then conn_set_handshake_no_client_cert conn
+                        else conn
+                conn3 = advance_message conn2
                 helloState = ACTIVE_MESSAGE conn == CLIENT_HELLO \/ ACTIVE_MESSAGE conn == SERVER_HELLO
+                noCertAuthState = ACTIVE_MESSAGE conn == CLIENT_CERT /\ conn.no_client_cert
 
 // Part of the s2n_connection struct that s2n_advance_message
 // uses. The names of the fields are the same as in C.
