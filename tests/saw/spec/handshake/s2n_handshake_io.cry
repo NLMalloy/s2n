@@ -22,18 +22,17 @@ conn_set_handshake_type conn = conn'
         (handshake' : handshake) = {handshake_type = handshake_type'
                                    ,message_number = conn.handshake.message_number
                                    }
-        handshake_type' = if (IS_TLS13_HANDSHAKE conn) then NEGOTIATED || FULL_HANDSHAKE
-                          else NEGOTIATED || full_handshake ||
+        handshake_type' = NEGOTIATED || full_handshake ||
                             (if (full_handshake != 0) then
                               perfect_forward_secrecy || ocsp_status || client_auth
                               else zero)
-        full_handshake  = if (conn.is_caching_enabled && ~conn.resume_from_cache)
+        full_handshake  = if (conn.is_caching_enabled /\ ~conn.resume_from_cache /\ ~IS_TLS13_HANDSHAKE conn)
                           then zero
                           else FULL_HANDSHAKE
-        perfect_forward_secrecy = if conn.key_exchange_eph
+        perfect_forward_secrecy = if (conn.key_exchange_eph /\ ~IS_TLS13_HANDSHAKE conn)
                                   then PERFECT_FORWARD_SECRECY
                                   else zero
-        ocsp_status = if conn.server_can_send_ocsp
+        ocsp_status = if (conn.server_can_send_ocsp /\ ~IS_TLS13_HANDSHAKE conn)
                       then OCSP_STATUS
                       else zero
         client_auth = if conn.client_auth_flag
@@ -256,6 +255,18 @@ tls13_handshakes_fn handshk =
     [ CLIENT_HELLO,
       SERVER_HELLO, SERVER_CHANGE_CIPHER_SPEC, ENCRYPTED_EXTENSIONS, SERVER_CERT, SERVER_CERT_VERIFY, SERVER_FINISHED,
       CLIENT_CHANGE_CIPHER_SPEC, CLIENT_FINISHED,
+      APPLICATION_DATA
+    ] # zero
+  else if handshk == (NEGOTIATED || FULL_HANDSHAKE || CLIENT_AUTH) then
+    [ CLIENT_HELLO,
+      SERVER_HELLO, SERVER_CHANGE_CIPHER_SPEC, ENCRYPTED_EXTENSIONS, SERVER_CERT_REQ, SERVER_CERT, SERVER_CERT_VERIFY, SERVER_FINISHED,
+      CLIENT_CHANGE_CIPHER_SPEC, CLIENT_CERT, CLIENT_CERT_VERIFY, CLIENT_FINISHED,
+      APPLICATION_DATA
+    ] # zero
+  else if handshk == (NEGOTIATED || FULL_HANDSHAKE || CLIENT_AUTH || NO_CLIENT_CERT) then
+    [ CLIENT_HELLO,
+      SERVER_HELLO, SERVER_CHANGE_CIPHER_SPEC, ENCRYPTED_EXTENSIONS, SERVER_CERT_REQ, SERVER_CERT,SERVER_CERT_VERIFY, SERVER_FINISHED,
+      CLIENT_CHANGE_CIPHER_SPEC, CLIENT_CERT, CLIENT_FINISHED,
       APPLICATION_DATA
     ] # zero
   else zero
