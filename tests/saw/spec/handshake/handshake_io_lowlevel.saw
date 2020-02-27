@@ -153,7 +153,7 @@ let setup_connection = do {
    crucible_points_to (conn_status_type pconn) (crucible_term ocsp_flag);
 
    no_client_cert <- crucible_fresh_var "no_client_cert" (llvm_int 2);
-   crucible_points_to (crucible_field pconn "no_client_cert") (crubible_term no_client_cert);
+   crucible_points_to (crucible_field pconn "no_client_cert") (crucible_term no_client_cert);
 
    let client_cert_auth_type = {{ if cca_ov != 0 then cca else config_cca }};
 
