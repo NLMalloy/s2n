@@ -305,7 +305,7 @@ int main(int argc, char **argv)
         EXPECT_SUCCESS(s2n_connection_free(conn));
     }
 
-    /* Test: TLS1.3 s2n_conn_set_handshake_type only sets FULL_HANDSHAKE */
+    /* Test: TLS1.3 s2n_conn_set_handshake_type sets FULL_HANDSHAKE and CLIENT_AUTH */
     {
         struct s2n_connection *conn = s2n_connection_new(S2N_CLIENT);
 
@@ -333,7 +333,7 @@ int main(int argc, char **argv)
         /* Verify that tls1.3 DOES NOT set the flags */
         conn->actual_protocol_version = S2N_TLS13;
         EXPECT_SUCCESS(s2n_conn_set_handshake_type(conn));
-        EXPECT_EQUAL(conn->handshake.handshake_type, NEGOTIATED | FULL_HANDSHAKE);
+        EXPECT_EQUAL(conn->handshake.handshake_type, NEGOTIATED | FULL_HANDSHAKE | CLIENT_AUTH);
 
         EXPECT_SUCCESS(s2n_connection_free(conn));
     }
