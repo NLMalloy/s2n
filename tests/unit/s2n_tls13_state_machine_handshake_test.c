@@ -330,7 +330,7 @@ int main(int argc, char **argv)
         EXPECT_TRUE(conn->handshake.handshake_type & WITH_SESSION_TICKET );
         EXPECT_TRUE(conn->handshake.handshake_type & CLIENT_AUTH );
 
-        /* Verify that tls1.3 DOES NOT set the flags */
+        /* Verify that tls1.3 ONLY set the CLIENT_AUTH flag */
         conn->actual_protocol_version = S2N_TLS13;
         EXPECT_SUCCESS(s2n_conn_set_handshake_type(conn));
         EXPECT_EQUAL(conn->handshake.handshake_type, NEGOTIATED | FULL_HANDSHAKE | CLIENT_AUTH);

@@ -87,6 +87,7 @@ static int s2n_try_handshake(struct s2n_connection *server_conn, struct s2n_conn
     return 0;
 }
 
+/*TODO: update pipe logic to use new functions after rebase */
 int s2n_test_client_auth(struct s2n_config *server_config, struct s2n_config *client_config, bool no_cert)
 {
     struct s2n_connection *client_conn;
@@ -120,6 +121,10 @@ int s2n_test_client_auth(struct s2n_config *server_config, struct s2n_config *cl
     server_conn->server_protocol_version = S2N_TLS13;
     server_conn->client_protocol_version = S2N_TLS13;
     server_conn->actual_protocol_version = S2N_TLS13;
+
+    server_conn->secure.conn_sig_scheme = s2n_ecdsa_secp256r1_sha256;
+    server_conn->secure.cipher_suite = &s2n_tls13_aes_128_gcm_sha256;
+    client_conn->secure.cipher_suite = &s2n_tls13_aes_128_gcm_sha256;
     
     if (no_cert) {
         s2n_connection_set_client_auth_type(server_conn, S2N_CERT_AUTH_OPTIONAL);
