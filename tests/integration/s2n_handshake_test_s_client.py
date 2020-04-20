@@ -37,6 +37,7 @@ PROTO_VERS_TO_S_CLIENT_ARG = {
     S2N_TLS10 : "-tls1",
     S2N_TLS11 : "-tls1_1",
     S2N_TLS12 : "-tls1_2",
+    S2N_TLS13 : "-tls1_3",
 }
 
 S_CLIENT_SUCCESSFUL_OCSP="OCSP Response Status: successful"
@@ -289,7 +290,7 @@ def try_handshake(endpoint, port, cipher, ssl_version, server_name=None, strict_
     if tls13_flag:
         s2nd_cmd.append("--tls13")
         # we use tls12 only cipher preferences to keep s2nd negotiating maximum versions of TLS 1.2
-        if s2nd_ciphers == "test_all":
+        if s2nd_ciphers == "test_all" and ssl_version != S2N_TLS13:
             s2nd_ciphers = "test_all_tls12"
 
     s2nd_cmd.append("-c")
